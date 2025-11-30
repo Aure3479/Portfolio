@@ -70,7 +70,7 @@
     {
       "mimeType": "image/jpeg",
       "name": "3DModel",
-      "uri": "3DModel.jpg"
+      "uri": "3Dmodel.jpg"
     }
   ],
   "accessors": [
@@ -144,7 +144,7 @@
   "buffers": [
     {
       "byteLength": 1652844,
-      "uri": "3DModel.bin"
+      "uri": "3Dmodel.bin"
     }
   ]
 }
