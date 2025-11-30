@@ -22,13 +22,13 @@ const DEFAULT_CONFIG = {
     viewPresets: {
   // vue "par défaut" = même chose que l’entrée
         default: {
-          position: { x: -4, y: 0.2, z: -4.2 },
+          position: { x: 4, y: 0.2, z: -2.2 },
           rotationY: 0
         },
 
         // vue d'entrée
         entrance: {
-          position: { x: -4, y: 0.2, z: -4.2 }, // même que default
+          position: { x: 4, y: 0.2, z: -2.2 }, // même que default
           rotationY: 0
         },
 
