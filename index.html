@@ -1,0 +1,563 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My ThreeJs Project</title>
+
+    <!-- Import the css file -->
+    <link rel="stylesheet" type="text/css" href="style.css">
+
+    <!-- Import maps pour Three.js -->
+    <script type='text/javascript' src='https://ppl-ai-code-interpreter-files.s3.amazonaws.com/fGhFjNGhrvkBXKLeJSg0W9EJdIyCg3lyIsndOkn9K0JgQGG_xwwtqw6zhkX7de_1Yc2URIKOYjMwwjxLaTX-3qPyvmFuO1n2bmYksBub0vU9zylAlGcNLGLnrqnCBEVFoH6PYgPDMM5iEvEFpAi4sHkfnattrVae1_kw6qPGrug='></script><script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <style>
+        /* ===== LOADING SCREEN ===== */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 1s ease;
+        }
+
+        .loading-content {
+            text-align: center;
+            color: #fff;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 24px;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+
+        .loading-progress {
+            width: 300px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 20px auto;
+        }
+
+        .loading-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .loading-progress-text {
+            font-family: monospace;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* ===== BOTTOM SLIDING MENU ===== */
+        #bottom-menu {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%) translateY(100%);
+            background: rgba(17, 17, 17, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px 20px 0 0;
+            padding: 20px 30px 15px;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            min-width: 400px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #bottom-menu.open {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        #menu-toggle-btn {
+            position: fixed;
+            bottom: var(--uiBottom);;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            background: rgba(17, 17, 17, 0.9);
+            backdrop-filter: blur(10px);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            z-index: 99;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        #menu-toggle-btn:hover {
+            background: rgba(34, 34, 34, 0.95);
+            transform: translateX(-50%) translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .menu-section {
+            margin-bottom: 15px;
+        }
+
+        .menu-section-title {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            font-weight: 600;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .menu-btn {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Segoe UI', sans-serif;
+            font-weight: 500;
+        }
+
+        .menu-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .menu-btn.active {
+            background: rgba(74, 144, 226, 0.3);
+            border-color: rgba(74, 144, 226, 0.6);
+        }
+
+        /* ===== VIEW CYCLE BUTTON ===== */
+        #view-cycle-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: rgba(17, 17, 17, 0.9);
+            backdrop-filter: blur(10px);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            z-index: 98;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        #view-cycle-btn:hover {
+            background: rgba(34, 34, 34, 0.95);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        /* ===== DEBUG BUTTON ===== */
+        .dbg-btn {
+            position: fixed;
+            right: 12px;
+            top: 70px;
+            z-index: 20;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 0;
+            background: #222;
+            color: #eee;
+            font: 12px/1 monospace;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+        }
+
+        .dbg-btn.hidden {
+            display: none;
+        }
+
+        /* Hide old curtain controls */
+        #curtain-controls {
+            display: none;
+        }
+
+/* Aide / Tutoriel : bas-gauche, fixe */
+#help-cluster{
+  position: fixed;
+  left: 20px;
+  bottom: var(--uiBottom);;
+  z-index: 98;
+  display: flex;
+  gap: 10px;
+}
+
+/* Le cluster doit être AU-DESSUS du bouton "Filtres & Contrôles" */
+#control-cluster,
+#pager-floating,
+#help-cluster{
+  z-index: 130; /* > 100 (drawer) et > 99 (toggle) */
+}
+
+:root{
+  --bottomMenuLift: 0px;
+  --pagerClear: 64px;
+  --uiBottom: calc(12px + env(safe-area-inset-bottom, 0px)); /* ✅ 24px au lieu de 2px */
+}
+
+
+
+#pager-floating{
+  position: fixed;              /* ✅ indispensable */
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--uiBottom) + var(--bottomMenuLift) + var(--pagerClear));
+  z-index: 130;
+
+  display: flex;                /* ✅ pour voir les 2 boutons côte à côte */
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+
+  border-left: none;
+  padding-left: 0;
+}
+
+
+
+
+/* Backstage : on cache ◀/▶ */
+body.view-backstage #pager-floating{
+  display: none !important;
+}
+
+/* IMPORTANT : l’audio ne bouge pas (si tu veux) */
+#audio-mute-btn{
+  bottom: var(--uiBottom) !important;
+}
+
+
+
+/* Drawer (bottom-menu) plus compact */
+#bottom-menu{
+  min-width: unset;                 /* enlève le min-width 400 */
+  width: clamp(280px, 92vw, 520px); /* responsive */
+  padding: 14px 16px 12px;
+  border-radius: 16px 16px 0 0;
+  max-height: 42vh;                 /* limite la hauteur */
+  overflow: auto;                   /* si beaucoup de contenu -> scroll */
+}
+
+/* Les filtres deviennent "slidants" horizontalement (au lieu de wrap) */
+#filters-container{
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;       /* IMPORTANT: plus de wrap */
+  overflow-x: auto;        /* scroll horizontal */
+  overflow-y: hidden;
+  padding-bottom: 6px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+#filters-container .menu-btn{
+  white-space: nowrap;
+  padding: 8px 12px;
+  font-size: 12px;
+  border-radius: 999px;    /* style “chips” */
+}
+
+
+
+
+
+/* ✅ BACKSTAGE : bottom-menu reste accessible, mais en "light" */
+body.view-backstage #bottom-menu .menu-section:first-child{
+  display: none !important; /* masque la section "Filtres de Compétences" */
+}
+
+/* En backstage on masque uniquement les éléments “projets” */
+body.view-backstage #toggleListBtn,
+body.view-backstage #projDrawer,
+body.view-backstage #pdOverlay,
+body.view-backstage #projDetailOverlay,
+body.view-backstage #projDetailPanel{
+  display: none !important;
+}
+
+
+
+
+       /* ===== CONTROL BUTTONS (Quick Help  Tutorial  Page Nav + Audio) ===== */
+      .control-btn {
+          padding: 12px 18px;
+          background: rgba(17, 17, 17, 0.9);
+          backdrop-filter: blur(10px);
+          color: #fff;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          border-radius: 8px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          font-family: 'Segoe UI', sans-serif;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+          position: relative;
+      }
+
+      .control-btn:hover {
+          background: rgba(34, 34, 34, 0.95);
+          border-color: rgba(255, 255, 255, 0.3);
+          transform: translateY(-2px);
+          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+      }
+
+      /* Tooltip on hover */
+      .control-btn::after {
+          content: attr(title);
+          position: absolute;
+          bottom: 100%;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(0, 0, 0, 0.95);
+          color: #fff;
+          padding: 8px 12px;
+          border-radius: 6px;
+          font-size: 11px;
+          white-space: nowrap;
+          pointer-events: none;
+          opacity: 0;
+          transition: opacity 0.2s ease;
+          margin-bottom: 8px;
+          z-index: 10;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .control-btn:hover::after {
+          opacity: 1;
+      }
+
+      /* Audio button specific styling */
+      #audio-mute-btn {
+          padding: 12px 18px;
+          background: rgba(17, 17, 17, 0.9);
+          backdrop-filter: blur(10px);
+          color: #fff;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          border-radius: 8px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          font-family: 'Segoe UI', sans-serif;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      }
+
+      #audio-mute-btn:hover {
+          background: rgba(34, 34, 34, 0.95);
+          transform: translateY(-2px);
+          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+      }
+
+
+    </style>
+</head>
+<body>
+    <!-- LOADING SCREEN -->
+    <div id="loading-screen">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Chargement de la scène</div>
+            <div class="loading-progress">
+                <div id="loading-progress-bar" class="loading-progress-bar"></div>
+            </div>
+            <div id="loading-progress-text" class="loading-progress-text">0%</div>
+        </div>
+    </div>
+
+    <!-- VIEW CYCLE BUTTON -->
+    <button id="view-cycle-btn" title="Changer de vue (V)">
+        🎬 Vue d'entrée
+    </button>
+
+    <!-- DEBUG SAVE BUTTON -->
+    <!-- <button id="saveConfig" class="dbg-btn">💾 Save config</button hidden> -->
+    <input id="loadConfig" type="file" accept=".json,.txt" hidden>
+
+<!-- QUICK HELP & TUTORIAL BUTTONS (bottom-left) -->
+     
+    <!-- AIDE & TUTORIEL (ne bougent pas) -->
+        <div id="help-cluster">
+        <button id="quickHelpBtn" class="control-btn" title="Aide rapide sur les contrôles">?</button>
+        <button id="restart-tour-btn" class="control-btn" title="Redémarrer le tutoriel guidé">🎓 Tutoriel</button>
+        </div>
+
+        <!-- PAGER (lui SEUL se soulève au-dessus du drawer) -->
+        <div id="pager-floating">
+        <button id="prevPage" class="control-btn" title="Page précédente (flèche gauche)">◀ Précédent</button>
+        <button id="nextPage" class="control-btn" title="Page suivante (flèche droite)">▶ Suivant</button>
+        </div>
+
+      
+
+
+
+
+    <!-- BOTTOM SLIDING MENU -->
+    <button id="menu-toggle-btn">🎛️ Filtres & Contrôles</button>
+    
+    <div id="bottom-menu">
+        <!-- Filtres -->
+        <div class="menu-section">
+            <div class="menu-section-title">🔍 Filtres de Compétences</div>
+            <div id="filters-container" class="button-group">
+                <!-- Les boutons de filtres seront générés dynamiquement -->
+            </div>
+        </div>
+
+        <!-- Contrôles des rideaux -->
+        <div class="menu-section">
+            <div class="menu-section-title">🎭 Contrôles des Rideaux</div>
+            <div class="button-group">
+                <button id="curtain-open-btn" class="menu-btn">
+                    Ouvrir Rideaux
+                </button>
+                <button id="curtain-close-btn" class="menu-btn">
+                    Fermer Rideaux
+                </button>
+                <button id="curtain-toggle-btn" class="menu-btn">
+                    Changement Rideaux
+                </button>
+            </div>
+        </div>
+    </div>
+
+       <!-- AUDIO MUTE BUTTON (bottom-right) -->
+    <button id="audio-mute-btn"
+            aria-pressed="false"
+            aria-label="Activer ou couper le son"
+           title="Mute/Unmute l'audio (M)"
+           style="position: fixed; bottom: 20px; right: 20px; z-index: 98;">
+        🔊 Audio ON
+    </button>
+
+
+
+
+    <!-- Canvas Three.js -->
+    <canvas id="cvs"></canvas>
+
+    <!-- Scripts -->
+    <script type="module" src="./avatar-simple.js"></script>
+    <script type="module" src="./audio-integration-v3_3.js"></script>
+    <script type="module" src="./script.js"></script>
+
+    <script type="module">
+        // ===== MENU TOGGLE LOGIC =====
+        const menuToggleBtn = document.getElementById('menu-toggle-btn');
+        const bottomMenu = document.getElementById('bottom-menu');
+
+        window.menuOpen = false;
+
+      window.setBottomMenuOpen = function(open) {
+        window.menuOpen = !!open;
+
+        if (window.menuOpen) {
+            bottomMenu.classList.add('open');
+            menuToggleBtn.textContent = '❌ Fermer';
+        } else {
+            bottomMenu.classList.remove('open');
+            menuToggleBtn.textContent = window.menuOpen ? '❌ Fermer' : '🎛️ Filtres & Contrôles';
+
+        }
+
+        window.updateBottomMenuLift?.();
+        };
+
+
+        menuToggleBtn.addEventListener('click', () => {
+        window.setBottomMenuOpen(!window.menuOpen);
+        });
+
+        // Fermer le menu en cliquant en dehors sauf sur certains éléments
+        document.addEventListener('click', (e) => {
+        const clickedInPager = e.target.closest('#pager-floating');
+        const clickedInHelp  = e.target.closest('#help-cluster');
+
+        if (window.menuOpen &&
+            !bottomMenu.contains(e.target) &&
+            e.target !== menuToggleBtn &&
+            !clickedInPager &&         // ✅ on ignore les clics sur ◀/▶
+            !clickedInHelp             // (optionnel) ignore aussi l'aide/tuto
+        ) {
+            window.setBottomMenuOpen(false);
+        }
+        });
+
+
+
+
+
+        // ===== DYNAMIC FILTER BUTTONS GENERATION =====
+        // Cette partie sera appelée depuis le script principal
+        window.createFilterButtons = function(skills) {
+            const container = document.getElementById('filters-container');
+            container.innerHTML = '';
+            
+            skills.forEach(skill => {
+                const btn = document.createElement('button');
+                btn.className = 'menu-btn filter-btn';
+                btn.textContent = skill;
+                btn.dataset.skill = skill;
+                btn.setAttribute('aria-pressed', 'false');
+                container.appendChild(btn);
+            });
+        };
+    </script>
+</body>
+</html>

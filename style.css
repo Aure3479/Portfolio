@@ -1,0 +1,6 @@
+html, body { margin: 0; height: 100%; overflow: hidden; background: #111; }
+#cvs { display: block; width: 100vw; height: 100vh; }
+
+canvas {
+    display: block;
+}

@@ -1,0 +1,11 @@
+Model Information:
+* title:	Red Curtain
+* source:	https://sketchfab.com/3d-models/red-curtain-a9a35b3a86cd4a2ab0c7b1e904492f89
+* author:	solusienna (https://sketchfab.com/solusienna)
+
+Model License:
+* license type:	CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
+* requirements:	Author must be credited. No commercial use.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Red Curtain" (https://sketchfab.com/3d-models/red-curtain-a9a35b3a86cd4a2ab0c7b1e904492f89) by solusienna (https://sketchfab.com/solusienna) licensed under CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
