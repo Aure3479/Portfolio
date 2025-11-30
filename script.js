@@ -3702,7 +3702,7 @@ function calculateCurtainPositions() {
 function loadCurtains() {
   const gltfLoader = new GLTFLoader();
 
-  gltfLoader.load('/models/curtains/scene.gltf', (gltf) => {
+  gltfLoader.load('./models/curtains/scene.gltf', (gltf) => {
     const curtainTemplate = gltf.scene.children[0];
     if (!curtainTemplate) {
       console.error('❌ Pas d\'enfant dans la scène GLTF !');

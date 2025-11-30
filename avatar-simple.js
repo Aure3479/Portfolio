@@ -10,7 +10,7 @@ import gsap from 'https://esm.sh/gsap@3';
 // === CONFIG DE BASE : à adapter à ton projet ======================
 const DEFAULT_CONFIG = {
   stage: {
-    path: './models/me/waving.fbx',
+    path: './models/me/Waving.fbx',
     type: 'fbx',
     position: { x: -8, y: 0.8, z: -4.2 }, // position "par défaut" (vue scène)
     hiddenY: -5,
