@@ -2359,3 +2359,358 @@ export async function initBackstageSystem(scene, camera, renderer, callbacks = {
 export default BackstageSystem;
 export { BackstageSystem };
 export { SpotlightController};
+
+
+/* ===== SPRINT 2 — i18n deep texts (backstage-system-fix.js) ===== */
+(function setupBackstageSprint2I18n() {
+  function pfBackLang() {
+    try {
+      if (window.portfolioI18n && typeof window.portfolioI18n.getLang === 'function') {
+        return window.portfolioI18n.getLang() || 'fr';
+      }
+    } catch (_) {}
+    const htmlLang = document.documentElement?.dataset?.lang || document.documentElement?.lang || '';
+    return String(htmlLang).toLowerCase().startsWith('en') ? 'en' : 'fr';
+  }
+
+  const PF_BACK_I18N = {
+    fr: {
+      cv: {
+        pdfUrl: './images/CV_FR.pdf',
+        iframeTitle: 'CV (PDF) — Français',
+        downloadText: '📥 Télécharger le CV (PDF)',
+        downloadFilename: 'CV_Aurelien_Passelaigue_FR.pdf',
+        notebookHover: 'Cliquez pour consulter mon CV'
+      },
+      ui: {
+        detailClose: 'Fermer'
+      },
+      labels: {
+        aboutHover: 'À propos de moi',
+        aboutTitle: 'À propos de moi',
+        diplomaHover: 'Diplôme & double master',
+        diplomaTitle: 'Diplôme & double master',
+        swordTitle: 'Game design & JDR',
+        controllerTitle: 'Manette & interaction',
+        musicTitle: 'Musique & harmonie'
+      },
+      hoverTexts: {
+        swordDice: "Le JDR, autant sous forme de dés que sous forme de Grandeur Nature (GN), pour s’exprimer et se mettre dans la peau des autres.",
+        controller: "Le jeu vidéo, autant une source de plaisir que d’inspiration.",
+        music: "La musique, pour explorer et inspirer autrement que par des mots."
+      },
+      aboutMeText: `INGÉNIEUR R&D | DOUBLE DIPLÔME ESILV × IFT DE VINCI (IFT)
+
+Je conçois des expériences immersives et utiles, où le tangible rencontre le numérique :
+du game dev interactif (Unity) aux objets connectés (Arduino/ESP32), en passant par le web 3D
+(Three.js / Next.js) et des prototypes orientés “wow effect” — mais toujours au service d’un besoin.
+
+Mon fil rouge : transformer une idée en démo solide, rapidement.
+Je teste, j’itère, j’observe l’impact utilisateur, je simplifie, puis j’industrialise quand ça vaut le coup.
+J’aime quand une interface “se comprend toute seule”, quand l’interaction est fluide, et quand la technique
+reste invisible derrière une expérience claire.
+
+Ce qui me différencie : une culture produit + une culture R&D.
+Je documente, je mesure, je compare, et je construis des systèmes modulaires qui peuvent évoluer :
+capteurs, audio, lumière, UI, logique interactive… Chaque brique est pensée pour être réutilisable.
+
+Actuellement : R&D / projets au De Vinci Lab (IFT) | Développeur Full-Stack & prototypage interactif
+Domaines : systèmes interactifs, IoT, interfaces 3D, expérimentation UX, prototypes temps réel
+Stack favorite : Unity/C#, Arduino/ESP32, Three.js/Next.js, WebAudio, Python`,
+      diplomaText: `DOUBLE DIPLÔME INGÉNIEUR (ESILV) × PROGRAMME IFT (De Vinci)
+
+ESILV — École d’Ingénieurs (Pôle Léonard de Vinci)
+IFT — Institute for Future Technologies (De Vinci Innovation Center)
+
+Focus : Systèmes Interactifs • Prototypage R&D • IoT • Expériences temps réel
+Année : 2025`,
+      detailTexts: {
+        swordDice: `Le JDR, c’est mon terrain de jeu préféré pour comprendre l’humain.\n\nQuand je lance des dés autour d’une table, ou quand je participe à un GN, je ne “joue” pas seulement :\nje m’entraîne à changer de point de vue.\nJe me mets dans la peau d’un autre personnage, avec ses contraintes, ses émotions, ses angles morts.\nEt ça, je le retrouve ensuite dans ma façon de concevoir des expériences.\n\nCe que le JDR m’a appris (pour de vrai) :\n- écouter avant de décider,\n- rendre une situation compréhensible sans tout expliquer,\n- donner du choix sans perdre le fil,\n- faire sentir les conséquences de manière claire.\n\nDans mes projets, je cherche ce même équilibre :\nlaisser l’utilisateur explorer librement, mais ne jamais le laisser “perdu”.\nSi une interaction est possible, je veux qu’elle soit ressentie comme une invitation, pas comme un piège.\n\nEn résumé : le JDR m’a donné un réflexe.\nMe demander : “si quelqu’un arrive ici sans mode d’emploi… est-ce qu’il comprend ce qui se passe, et est-ce qu’il a envie de continuer ?”`,
+        controller: `Le jeu vidéo, c’est à la fois une source de plaisir… et mon laboratoire d’UX quotidien.\n\nJe suis sensible à cette sensation très précise :\nquand tu touches une manette (ou une souris) et que le système répond instantanément.\nTu comprends. Tu apprends. Tu maîtrises.\nEt tu te dis : “ok, je peux avancer”.\n\nC’est exactement ce que je veux provoquer dans mes interfaces et mes scènes interactives.\nPas juste “faire joli”, mais créer une dynamique :\n- une intention claire,\n- un geste simple,\n- un feedback net,\n- et une progression naturelle.\n\nCe que j’emprunte souvent au jeu vidéo :\n- le feedback immédiat (animation / son / lumière),\n- la progression par petites victoires (micro-objectifs),\n- la cohérence des règles (même geste = même résultat),\n- le respect du rythme (ne pas saturer, laisser respirer).\n\nQuand quelqu’un explore mon portfolio, j’aimerais qu’il ressente ça :\n“c’est fluide”, “je comprends”, “j’ai envie de cliquer encore”.\nComme une bonne première minute de jeu.`,
+        music: `La musique, c’est mon moyen d’explorer autrement que par des mots.\n\nIl y a des choses que je comprends mieux en rythme, en tension/détente, en harmonie.\nQuand je chante ou que je travaille une partie, je ressens très vite si “ça se tient”.\nEt j’ai le même rapport à une expérience interactive :\nsi une scène est bien construite, on le “sent”.\n\nLa musique m’a appris :\n- la structure (intro, thème, variations, retour),\n- le tempo (quand accélérer, quand ralentir),\n- l’écoute (des autres… et de ce que le système renvoie),\n- la précision (un détail peut casser l’ensemble).\n\nDans mon portfolio, j’aime utiliser le son et le mouvement comme des repères.\nPas pour faire du bruit.\nMais pour guider, donner une ambiance, et rendre l’exploration plus intuitive.\n\nAu fond, je vise une expérience qui “sonne juste” :\nune interaction claire, une esthétique cohérente, et une sensation globale harmonieuse.`,
+        aboutMe: `Je suis quelqu’un qui a besoin de construire pour comprendre.\n\nJe peux passer du temps à imaginer, mais ce qui me rend vraiment heureux, c’est le moment où ça prend vie :\nun prototype qui répond, une interaction qui “clique”, un petit détail qui rend l’expérience évidente.\n\nJ’aime créer des passerelles entre des mondes :\n- le jeu (interaction, narration, plaisir),\n- le réel (capteurs, objets, contraintes physiques),\n- le web (accessibilité, diffusion, partage),\n- et la 3D (immersion, mise en scène, surprise).\n\nMa manière de travailler est simple :\nje teste vite.\nJe garde ce qui fonctionne.\nJe coupe ce qui complique.\nJe recommence jusqu’à ce que ce soit fluide.\n\nCe portfolio est pensé comme une scène.\nJe veux que tu puisses te balader, découvrir, et comprendre qui je suis sans lire un roman.\nEt si tu prends le temps d’explorer, tu trouveras les détails :\nles projets, les choix techniques, et ce que j’ai essayé de raconter derrière chaque objet.`,
+        diploma: `Mon double diplôme, pour moi, ce n’est pas juste une ligne sur un CV.\nC’est la traduction de ma curiosité et de mon envie de mêler rigueur et expérimentation.\n\nD’un côté, l’école d’ingénieur :\napprendre à structurer, à être fiable, à livrer, à comprendre les contraintes.\nDe l’autre, l’IFT :\naller chercher les usages, prototyper, explorer des systèmes interactifs, tester des idées “futures”.\n\nCe que j’aime dans ce mélange :\nje peux être très concret (faire marcher le système),\net en même temps très orienté expérience (faire que ça se vive bien).\n\nAujourd’hui, je me sens à ma place quand je construis des projets qui ont :\n- une dimension interactive,\n- un vrai point de vue (pas juste une démo technique),\n- et un résultat que quelqu’un peut utiliser ou ressentir.\n\nEn bref : je suis un profil hybride, et j’assume.\nParce que c’est exactement à cet endroit-là — entre technique et expérience — que j’ai le plus d’énergie.`
+      }
+    },
+    en: {
+      cv: {
+        pdfUrl: './images/CV_EN.pdf',
+        iframeTitle: 'Resume (PDF) — English',
+        downloadText: '📥 Download resume (PDF)',
+        downloadFilename: 'Aurelien_Passelaigue_Resume_EN.pdf',
+        notebookHover: 'Click to open my resume'
+      },
+      ui: {
+        detailClose: 'Close'
+      },
+      labels: {
+        aboutHover: 'About me',
+        aboutTitle: 'About me',
+        diplomaHover: 'Degree & double program',
+        diplomaTitle: 'Degree & double program',
+        swordTitle: 'Game design & TTRPG',
+        controllerTitle: 'Controller & interaction',
+        musicTitle: 'Music & harmony'
+      },
+      hoverTexts: {
+        swordDice: 'TTRPGs — from dice at the table to live-action role-play — help me express myself and step into other perspectives.',
+        controller: 'Video games are both a source of joy and a lasting source of inspiration.',
+        music: 'Music helps me explore and inspire in ways that go beyond words.'
+      },
+      aboutMeText: `R&D ENGINEER | ESILV × IFT DE VINCI DOUBLE DEGREE (IFT)
+
+I design immersive and useful experiences where the tangible meets the digital:
+from interactive game dev (Unity) to connected objects (Arduino/ESP32), through 3D web
+(Three.js / Next.js) and “wow effect” prototypes — always serving a real need.
+
+My through-line: turn an idea into a solid demo, fast.
+I test, iterate, observe user impact, simplify, then industrialize when it makes sense.
+I love when an interface “explains itself”, when interaction feels fluid, and when the tech
+stays invisible behind a clear experience.
+
+What sets me apart: product culture + R&D culture.
+I document, measure, compare, and build modular systems that can evolve:
+sensors, audio, lighting, UI, interactive logic… Every block is designed to be reusable.
+
+Currently: R&D / projects at De Vinci Lab (IFT) | Full-stack developer & interactive prototyping
+Domains: interactive systems, IoT, 3D interfaces, UX experimentation, real-time prototypes
+Favorite stack: Unity/C#, Arduino/ESP32, Three.js/Next.js, WebAudio, Python`,
+      diplomaText: `DOUBLE DEGREE ENGINEERING (ESILV) × IFT PROGRAM (De Vinci)
+
+ESILV — Engineering School (Pôle Léonard de Vinci)
+IFT — Institute for Future Technologies (De Vinci Innovation Center)
+
+Focus: Interactive Systems • R&D Prototyping • IoT • Real-time Experiences
+Year: 2025`,
+      detailTexts: {
+        swordDice: `TTRPGs are my favorite playground for understanding people.\n\nWhen I roll dice around a table, or take part in live-action role-play, I’m not just “playing”:\nI train myself to change perspective.\nI step into another character’s constraints, emotions, and blind spots.\nThat directly shapes the way I design interactive experiences.\n\nWhat TTRPGs taught me (for real):\n- listen before deciding,\n- make a situation understandable without over-explaining,\n- offer choices without losing the thread,\n- make consequences felt clearly.\n\nIn my projects I look for that same balance:\nlet users explore freely, but never leave them lost.\nIf an interaction is possible, I want it to feel like an invitation, not a trap.\n\nIn short, TTRPGs gave me a reflex:\nask myself, “if someone arrives here with no manual… do they understand what is happening, and do they want to keep going?”`,
+        controller: `Video games are both a source of pleasure… and my daily UX lab.\n\nI care about that very specific feeling:\nwhen you touch a controller (or mouse) and the system responds instantly.\nYou understand. You learn. You gain control.\nAnd you think: “ok, I can move forward.”\n\nThat is exactly the feeling I want to create in my interfaces and interactive scenes.\nNot just “make it pretty”, but create a dynamic:\n- a clear intention,\n- a simple gesture,\n- crisp feedback,\n- and natural progression.\n\nWhat I often borrow from games:\n- immediate feedback (animation / sound / light),\n- progress through small wins (micro-goals),\n- consistent rules (same action = same result),\n- rhythm management (don’t overload, let it breathe).\n\nWhen someone explores my portfolio, I’d love them to feel:\n“it’s smooth”, “I get it”, “I want to click more”.\nLike a strong first minute of gameplay.`,
+        music: `Music is my way of exploring beyond words.\n\nThere are things I understand better through rhythm, tension/release, and harmony.\nWhen I sing or work on a part, I quickly feel whether “it holds together”.\nI have the same relationship with interactive experiences:\nwhen a scene is well built, you can feel it.\n\nMusic taught me:\n- structure (intro, theme, variations, return),\n- tempo (when to speed up, when to slow down),\n- listening (to others… and to what the system gives back),\n- precision (a detail can break the whole).\n\nIn my portfolio, I like using sound and motion as landmarks.\nNot to make noise.\nBut to guide, create atmosphere, and make exploration more intuitive.\n\nAt heart, I aim for an experience that “sounds right”:\nclear interaction, coherent aesthetics, and an overall sense of harmony.`,
+        aboutMe: `I’m someone who needs to build in order to understand.\n\nI can spend time imagining, but what truly makes me happy is the moment it comes alive:\na prototype that responds, an interaction that “clicks”, a small detail that makes the experience obvious.\n\nI love building bridges between worlds:\n- games (interaction, narrative, enjoyment),\n- the physical world (sensors, objects, constraints),\n- the web (accessibility, sharing, distribution),\n- and 3D (immersion, staging, surprise).\n\nMy way of working is simple:\nI test fast.\nI keep what works.\nI cut what adds friction.\nI iterate until it feels fluid.\n\nThis portfolio is designed like a stage.\nI want you to walk around, discover things, and understand who I am without reading a novel.\nAnd if you take time to explore, you’ll find the details:\nprojects, technical choices, and what I tried to express behind each object.`,
+        diploma: `For me, my double degree is not just a line on a resume.\nIt represents my curiosity and my drive to combine rigor and experimentation.\n\nOn one side, engineering school:\nlearning to structure, be reliable, deliver, and understand constraints.\nOn the other side, IFT:\nexploring uses, prototyping, building interactive systems, testing “future” ideas.\n\nWhat I love in this mix:\nI can be very concrete (make the system work),\nand at the same time deeply experience-oriented (make it feel good to use).\n\nToday I feel most in my element when I build projects with:\n- an interactive dimension,\n- a real point of view (not just a technical demo),\n- and an outcome someone can use or feel.\n\nIn short: I’m a hybrid profile — and I embrace it.\nBecause that space between technology and experience is exactly where I have the most energy.`
+      }
+    }
+  };
+
+  function backCopy() {
+    const lang = pfBackLang();
+    return PF_BACK_I18N[lang] || PF_BACK_I18N.fr;
+  }
+
+  function drawAboutCanvas(canvas, text) {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = '#f5f5dc';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = '#c9a961';
+    ctx.lineWidth = 20;
+    ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+
+    ctx.fillStyle = '#2a2a2a';
+    ctx.textAlign = 'center';
+
+    const lines = String(text || '').split('\n');
+    let y = 80;
+    const lineHeight = 40;
+
+    lines.forEach((line, index) => {
+      if (index === 0) {
+        ctx.font = 'bold 36px Arial';
+        ctx.fillText(line, canvas.width / 2, y);
+        y += lineHeight + 20;
+        ctx.font = '28px Arial';
+      } else if (line.trim()) {
+        ctx.fillText(line, canvas.width / 2, y);
+        y += lineHeight;
+      } else {
+        y += lineHeight / 2;
+      }
+    });
+  }
+
+  function drawDiplomaCanvas(canvas, text) {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#faf8f3';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = '#d4af37';
+    ctx.lineWidth = 30;
+    ctx.strokeRect(15, 15, canvas.width - 30, canvas.height - 30);
+
+    ctx.fillStyle = '#d4af37';
+    ctx.font = 'bold 60px serif';
+    ctx.fillText('✦', 60, 80);
+    ctx.fillText('✦', canvas.width - 100, 80);
+    ctx.fillText('✦', 60, canvas.height - 40);
+    ctx.fillText('✦', canvas.width - 100, canvas.height - 40);
+
+    ctx.fillStyle = '#2a2a2a';
+    ctx.textAlign = 'center';
+
+    const lines = String(text || '').split('\n');
+    let y = 200;
+
+    lines.forEach((line, index) => {
+      if (index === 0) ctx.font = 'bold 56px serif';
+      else if (index <= 2) ctx.font = 'italic 42px serif';
+      else ctx.font = '38px serif';
+      ctx.fillText(line, canvas.width / 2, y);
+      y += 80;
+    });
+  }
+
+  function drawCvNotebookCoverCanvas(canvas) {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const lang = pfBackLang();
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#8b4513';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = '#f5deb3';
+    ctx.font = 'bold 48px Arial';
+    ctx.textAlign = 'center';
+
+    if (lang === 'en') {
+      ctx.fillText('Portfolio', 256, 215);
+      ctx.fillText('& Resume', 256, 285);
+    } else {
+      ctx.fillText('Portfolio', 256, 220);
+      ctx.fillText('& CV', 256, 280);
+    }
+  }
+
+  BackstageSystem.prototype.refreshLocalizedContent = function () {
+    const copy = backCopy();
+    const L = copy.labels;
+    const D = copy.detailTexts;
+    const H = copy.hoverTexts;
+
+    (this.interactiveObjects || []).forEach((obj) => {
+      const type = obj?.userData?.type;
+      if (!type) return;
+
+      switch (type) {
+        case 'cv-notebook': {
+          obj.userData.hoverText = copy.cv.notebookHover;
+          // redraw cover canvas if present (first child = cover)
+          const coverCanvas = obj.children?.[0]?.material?.map?.image;
+          if (coverCanvas && typeof coverCanvas.getContext === 'function') {
+            drawCvNotebookCoverCanvas(coverCanvas);
+            obj.children[0].material.map.needsUpdate = true;
+          }
+          break;
+        }
+
+        case 'about-me': {
+          obj.userData.hoverText = L.aboutHover;
+          obj.userData.detailTitle = L.aboutTitle;
+          obj.userData.detailText = D.aboutMe;
+          const aboutCanvas = obj.material?.map?.image;
+          if (aboutCanvas && typeof aboutCanvas.getContext === 'function') {
+            drawAboutCanvas(aboutCanvas, copy.aboutMeText);
+            obj.material.map.needsUpdate = true;
+          }
+          break;
+        }
+
+        case 'diploma': {
+          obj.userData.hoverText = L.diplomaHover;
+          obj.userData.detailTitle = L.diplomaTitle;
+          obj.userData.detailText = D.diploma;
+          const diplomaMesh = (obj.children || []).find(ch => ch.isMesh && ch.material?.map?.image && typeof ch.material.map.image.getContext === 'function');
+          const diplomaCanvas = diplomaMesh?.material?.map?.image;
+          if (diplomaCanvas) {
+            drawDiplomaCanvas(diplomaCanvas, copy.diplomaText);
+            diplomaMesh.material.map.needsUpdate = true;
+          }
+          break;
+        }
+
+        case 'sword-dice':
+          obj.userData.hoverText = H.swordDice;
+          obj.userData.detailTitle = L.swordTitle;
+          obj.userData.detailText = D.swordDice;
+          break;
+
+        case 'controller':
+          obj.userData.hoverText = H.controller;
+          obj.userData.detailTitle = L.controllerTitle;
+          obj.userData.detailText = D.controller;
+          break;
+
+        case 'music':
+          obj.userData.hoverText = H.music;
+          obj.userData.detailTitle = L.musicTitle;
+          obj.userData.detailText = D.music;
+          break;
+      }
+    });
+
+    // Update CV modal labels/URLs if modal exists
+    if (this.cvModal) {
+      const iframe = this.cvModal.querySelector('iframe');
+      const downloadBtn = this.cvModal.querySelector('a[href]');
+      if (iframe) {
+        iframe.src = `${copy.cv.pdfUrl}#toolbar=1&navpanes=0&view=FitH`;
+        iframe.title = copy.cv.iframeTitle;
+      }
+      if (downloadBtn) {
+        downloadBtn.href = copy.cv.pdfUrl;
+        downloadBtn.download = copy.cv.downloadFilename;
+        downloadBtn.textContent = copy.cv.downloadText;
+      }
+    }
+
+    // Update detail panel close button
+    if (this.detailPanel) {
+      const closeBtn = this.detailPanel.querySelector('button');
+      if (closeBtn) closeBtn.textContent = copy.ui.detailClose;
+
+      // If a detail is open, refresh it with the current zoomed object content
+      if (this.detailPanel.style.display === 'block' && this.zoomedObject?.userData) {
+        this.detailPanelTitle.textContent = this.zoomedObject.userData.detailTitle || '';
+        this.detailPanelBody.textContent = this.zoomedObject.userData.detailText || '';
+      }
+    }
+
+    // If currently hovering an object, refresh tooltip content live
+    if (this.tooltip && this.hoveredObject?.userData?.hoverText && this.tooltip.style.display === 'block') {
+      this.tooltip.textContent = this.hoveredObject.userData.hoverText;
+    }
+  };
+
+  const __pfOrigInit = BackstageSystem.prototype.init;
+  BackstageSystem.prototype.init = async function (...args) {
+    const result = await __pfOrigInit.apply(this, args);
+
+    if (!this.__portfolioLangListener) {
+      this.__portfolioLangListener = () => this.refreshLocalizedContent();
+      window.addEventListener('portfolio-language-changed', this.__portfolioLangListener);
+    }
+
+    this.refreshLocalizedContent();
+    return result;
+  };
+
+  const __pfOrigDispose = BackstageSystem.prototype.dispose;
+  BackstageSystem.prototype.dispose = function (...args) {
+    if (this.__portfolioLangListener) {
+      window.removeEventListener('portfolio-language-changed', this.__portfolioLangListener);
+      this.__portfolioLangListener = null;
+    }
+    return __pfOrigDispose.apply(this, args);
+  };
+})();
+/* ===== END SPRINT 2 — i18n deep texts (backstage-system-fix.js) ===== */

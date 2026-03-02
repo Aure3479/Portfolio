@@ -4,3 +4,13 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #111; }
 canvas {
     display: block;
 }
+
+/* Sprint 1 - base readability defaults */
+html, body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #fff;
+}
+
+button {
+  font: inherit;
+}

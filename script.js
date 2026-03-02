@@ -2034,11 +2034,68 @@ function stableColorFromKey(key, { s = 0.62, l = 0.48 } = {}) {
 }
 
 
+// --- i18n helpers pour les projets (Sprint 2.1) ---
+function getPortfolioLangForProjects() {
+  try {
+    if (window.portfolioI18n && typeof window.portfolioI18n.getLang === 'function') {
+      const lang = window.portfolioI18n.getLang();
+      return lang === 'en' ? 'en' : 'fr';
+    }
+  } catch (_) {}
+  const htmlLang = document.documentElement?.dataset?.lang || document.documentElement?.lang || 'fr';
+  return String(htmlLang).toLowerCase().startsWith('en') ? 'en' : 'fr';
+}
+
+function getProjectField(p, baseKey, fallback = '') {
+  if (!p) return fallback;
+  const lang = getPortfolioLangForProjects();
+
+  const langKey = `${baseKey}_${lang}`;
+  const altLangKey = `${baseKey}${lang === 'en' ? 'En' : 'Fr'}`;
+  const otherLangKey = `${baseKey}_${lang === 'en' ? 'fr' : 'en'}`;
+
+  const val =
+    p?.[langKey] ??
+    p?.[altLangKey] ??
+    p?.[baseKey] ??
+    p?.[otherLangKey];
+
+  if (val == null || val === '') return fallback;
+  return val;
+}
+
+function getProjectKeywordsLocalized(p) {
+  if (!p) return [];
+  const lang = getPortfolioLangForProjects();
+
+  const candidates = [
+    p?.[`keywords_${lang}`],
+    p?.[`key-words_${lang}`],
+    p?.[lang === 'en' ? 'keywordsEn' : 'keywordsFr'],
+    p?.[lang === 'en' ? 'keyWordsEn' : 'keyWordsFr'],
+    p?.keywords,
+    p?.['key-words'],
+    p?.tags,
+    p?.[`keywords_${lang === 'en' ? 'fr' : 'en'}`],
+    p?.[`key-words_${lang === 'en' ? 'fr' : 'en'}`]
+  ];
+
+  for (const arr of candidates) {
+    if (Array.isArray(arr)) return arr.map(String);
+  }
+  return [];
+}
+
 // Normalisation d'un projet (sans récursion)
 // Normalisation d'un projet (sans récursion)
 function normalizeProject(p, idx = 0){
-  const title = String(p?.title || 'Sans titre');
-  const subtitle = p?.subtitle || '';
+  const titleFr = String(p?.title_fr ?? p?.titleFr ?? p?.title ?? p?.title_en ?? p?.titleEn ?? 'Sans titre');
+  const titleEn = String(p?.title_en ?? p?.titleEn ?? p?.title ?? p?.title_fr ?? p?.titleFr ?? 'Untitled');
+  const subtitleFr = String(p?.subtitle_fr ?? p?.subtitleFr ?? p?.subtitle ?? p?.subtitle_en ?? p?.subtitleEn ?? '');
+  const subtitleEn = String(p?.subtitle_en ?? p?.subtitleEn ?? p?.subtitle ?? p?.subtitle_fr ?? p?.subtitleFr ?? '');
+
+  const title = titleFr || titleEn || 'Sans titre';
+  const subtitle = subtitleFr || subtitleEn || '';
 
   // clé la plus stable possible :
   // - si tu as un "id" dans projects.json => TOP
@@ -2051,19 +2108,57 @@ function normalizeProject(p, idx = 0){
 
   const autoColor = stableColorFromKey(`project:${key}`);
 
+  const descriptionFr = p?.description_fr ?? p?.descriptionFr ?? p?.description ?? p?.description_en ?? p?.descriptionEn ?? '';
+  const descriptionEn = p?.description_en ?? p?.descriptionEn ?? p?.description ?? p?.description_fr ?? p?.descriptionFr ?? '';
+  const detailsFr = p?.details_fr ?? p?.detailsFr ?? p?.longDescription_fr ?? p?.longDescriptionFr ?? p?.details ?? p?.longDescription ?? descriptionFr;
+  const detailsEn = p?.details_en ?? p?.detailsEn ?? p?.longDescription_en ?? p?.longDescriptionEn ?? p?.details ?? p?.longDescription ?? descriptionEn;
+
+  const keywordsFr = getProjectKeywordsLocalized({
+    ...p,
+    keywords: p?.keywords_fr ?? p?.keywordsFr ?? p?.keywords ?? p?.['key-words_fr'] ?? p?.['key-words'],
+    'key-words': p?.['key-words_fr'] ?? p?.['key-words'] ?? p?.keywords_fr ?? p?.keywords
+  });
+  const keywordsEn = getProjectKeywordsLocalized({
+    ...p,
+    keywords: p?.keywords_en ?? p?.keywordsEn ?? p?.keywords ?? p?.['key-words_en'] ?? p?.['key-words'],
+    'key-words': p?.['key-words_en'] ?? p?.['key-words'] ?? p?.keywords_en ?? p?.keywords
+  });
+  const keywordsDefault = ((p && (p['key-words'] || p.keywords || p.tags)) || []).map(String);
+
   return {
     id: p?.id ?? null,
+    slug: p?.slug ?? null,
+
+    // Champs legacy (compat)
     title,
     subtitle,
-    color: p?.color || autoColor,     // ✅ auto si pas fourni
+    description: descriptionFr || descriptionEn || '',
+    details: detailsFr || detailsEn || descriptionFr || descriptionEn || '',
+    caption: p?.caption_fr ?? p?.captionFr ?? p?.caption ?? p?.caption_en ?? p?.captionEn ?? '',
+    linkLabel: p?.linkLabel_fr ?? p?.linkLabelFr ?? p?.linkLabel ?? p?.linkLabel_en ?? p?.linkLabelEn ?? 'Ouvrir le projet',
+    keywords: keywordsDefault.length ? keywordsDefault : (keywordsFr.length ? keywordsFr : keywordsEn),
+
+    // Champs i18n (Sprint 2.1)
+    title_fr: titleFr,
+    title_en: titleEn,
+    subtitle_fr: subtitleFr,
+    subtitle_en: subtitleEn,
+    description_fr: descriptionFr,
+    description_en: descriptionEn,
+    details_fr: detailsFr,
+    details_en: detailsEn,
+    caption_fr: p?.caption_fr ?? p?.captionFr ?? p?.caption ?? '',
+    caption_en: p?.caption_en ?? p?.captionEn ?? p?.caption ?? p?.caption_fr ?? p?.captionFr ?? '',
+    linkLabel_fr: p?.linkLabel_fr ?? p?.linkLabelFr ?? p?.linkLabel ?? 'Voir le projet',
+    linkLabel_en: p?.linkLabel_en ?? p?.linkLabelEn ?? p?.linkLabel ?? p?.linkLabel_fr ?? p?.linkLabelFr ?? 'Open project',
+    keywords_fr: keywordsFr.length ? keywordsFr : keywordsDefault,
+    keywords_en: keywordsEn.length ? keywordsEn : keywordsDefault,
+
+    // Champs communs
+    color: p?.color || autoColor,
     bg: p?.bg || '#fff',
-    description: p?.description || '',
-    details: p?.details || p?.longDescription || p?.description || '',
     image: p?.image || null,
-    caption: p?.caption || '',
-    link: p?.link || p?.url || '',
-    linkLabel: p?.linkLabel || 'Ouvrir le projet',
-    keywords: ((p && (p['key-words'] || p.keywords || p.tags)) || []).map(String)
+    link: p?.link || p?.url || ''
   };
 }
 
@@ -2232,13 +2327,18 @@ async function makeProjectTexture(p) {
   g.fillStyle = p.bg || '#fff';
   g.fillRect(0, 0, CAN_W, CAN_H);
 
+  const pTitle = String(getProjectField(p, 'title', 'Sans titre'));
+  const pSubtitle = String(getProjectField(p, 'subtitle', ''));
+  const pCaption = String(getProjectField(p, 'caption', ''));
+  const pDescription = String(getProjectField(p, 'description', ''));
+
   // bandeau titre
   g.fillStyle = p.color || '#222';
   g.fillRect(0, 0, CAN_W, 160);
   g.fillStyle = '#fff';
   g.font = 'bold 60px system-ui, Helvetica, Arial'; g.textBaseline = 'middle';
-  g.fillText(String(p.title || 'Sans titre'), 48, 80);
-  if (p.subtitle) { g.font = '32px system-ui, Helvetica, Arial'; g.fillText(p.subtitle, 48, 140); }
+  g.fillText(pTitle, 48, 80);
+  if (pSubtitle) { g.font = '32px system-ui, Helvetica, Arial'; g.fillText(pSubtitle, 48, 140); }
 
   // image (si URL fournie)
   let yAfterImage = 220;
@@ -2252,7 +2352,7 @@ async function makeProjectTexture(p) {
       const pad = 48, iw = CAN_W - pad*2, ih = Math.round(iw * 9/16);
       g.fillStyle = '#f1f1f1'; g.fillRect(pad, 220, iw, ih);
       g.drawImage(img, pad, 220, iw, ih);
-      if (p.caption) { g.fillStyle = '#555'; g.font = '24px system-ui'; g.fillText(p.caption, pad, 220 + ih + 36); }
+      if (pCaption) { g.fillStyle = '#555'; g.font = '24px system-ui'; g.fillText(pCaption, pad, 220 + ih + 36); }
       yAfterImage = 220 + ih + 84;
     }
   }
@@ -2260,7 +2360,7 @@ async function makeProjectTexture(p) {
   // description
   g.fillStyle = '#222'; g.font = '26px system-ui, Helvetica, Arial';
   const pad = 48, maxW = CAN_W - pad*2, lineH = 36;
-  const words = String(p.description || '').split(/\s+/);
+  const words = pDescription.split(/\s+/);
   let line = '', y = yAfterImage;
   for (const w of words) {
     const test = line ? line + ' ' + w : w;
@@ -2651,6 +2751,7 @@ let projDetailKeywords = null;
 let projDetailLink = null;
 let projDetailColorBar = null;
 let projDetailCurrentMesh = null;
+let projDetailCurrentProject = null;
 
 // Création lazy du panneau et de l'overlay
 function ensureProjectDetailUI() {
@@ -2753,12 +2854,23 @@ function ensureProjectDetailUI() {
 function openProjectDetail(project, pageMesh) {
   ensureProjectDetailUI();
   projDetailCurrentMesh = pageMesh || null;
+  projDetailCurrentProject = project || null;
 
   const p = project || {};
-  projDetailTitle.textContent = p.title || 'Sans titre';
-  projDetailSubtitle.textContent = p.subtitle || '';
-  projDetailShort.textContent = p.description || '';
-  projDetailLong.textContent = p.details || p.description || '';
+  const pTitle = getProjectField(p, 'title', 'Sans titre');
+  const pSubtitle = getProjectField(p, 'subtitle', '');
+  const pDescription = getProjectField(p, 'description', '');
+  const pDetails = getProjectField(p, 'details', pDescription);
+  const pLinkLabel = getProjectField(
+    p,
+    'linkLabel',
+    getPortfolioLangForProjects() === 'en' ? 'Open project' : 'Ouvrir le projet'
+  );
+
+  projDetailTitle.textContent = pTitle;
+  projDetailSubtitle.textContent = pSubtitle;
+  projDetailShort.textContent = pDescription;
+  projDetailLong.textContent = pDetails;
 
   // couleur
   const col = p.color || '#0ea5e9';
@@ -2766,7 +2878,7 @@ function openProjectDetail(project, pageMesh) {
 
   // mots-clés
   projDetailKeywords.innerHTML = '';
-  (p.keywords || p['key-words'] || p.tags || []).forEach(k => {
+  getProjectKeywordsLocalized(p).forEach(k => {
     const chip = document.createElement('span');
     chip.textContent = k;
     chip.style.cssText = `
@@ -2781,7 +2893,7 @@ function openProjectDetail(project, pageMesh) {
   if (p.link) {
     projDetailLink.style.display = 'flex';
     projDetailLink.href = p.link;
-    projDetailLink.textContent = p.linkLabel || 'Ouvrir le projet';
+    projDetailLink.textContent = pLinkLabel;
   } else {
     projDetailLink.style.display = 'none';
   }
@@ -2853,8 +2965,45 @@ function closeProjectDetail(animateBack) {
       projDetailOverlay.style.opacity = '0';
       projDetailOverlay.style.pointerEvents = 'none';
       projDetailCurrentMesh = null;
+      projDetailCurrentProject = null;
     }
   });
+}
+
+function refreshProjectDetailLanguage() {
+  if (!projDetailPanel || !projDetailCurrentProject) return;
+  if (projDetailPanel.style.opacity === '0') return;
+
+  const p = projDetailCurrentProject;
+  const pTitle = getProjectField(p, 'title', 'Sans titre');
+  const pSubtitle = getProjectField(p, 'subtitle', '');
+  const pDescription = getProjectField(p, 'description', '');
+  const pDetails = getProjectField(p, 'details', pDescription);
+  const pLinkLabel = getProjectField(
+    p,
+    'linkLabel',
+    getPortfolioLangForProjects() === 'en' ? 'Open project' : 'Ouvrir le projet'
+  );
+
+  if (projDetailTitle) projDetailTitle.textContent = pTitle;
+  if (projDetailSubtitle) projDetailSubtitle.textContent = pSubtitle;
+  if (projDetailShort) projDetailShort.textContent = pDescription;
+  if (projDetailLong) projDetailLong.textContent = pDetails;
+  if (projDetailLink && p.link) projDetailLink.textContent = pLinkLabel;
+
+  if (projDetailKeywords) {
+    projDetailKeywords.innerHTML = '';
+    getProjectKeywordsLocalized(p).forEach(k => {
+      const chip = document.createElement('span');
+      chip.textContent = k;
+      chip.style.cssText = `
+      font:11px system-ui;
+      padding:3px 8px;border-radius:999px;
+      background:#1f2937;color:#e5e7eb;
+    `;
+      projDetailKeywords.appendChild(chip);
+    });
+  }
 }
 
 /* =================== FIN ZOOM PROJET – PANNEAU UI =================== */
@@ -2879,7 +3028,7 @@ function computeSkillsFromProjects() {
   const set = new Set();
 
   for (const p of projects) {
-    const kws = (p.keywords || p['key-words'] || p.tags || []);
+    const kws = getProjectKeywordsLocalized(p);
     kws.forEach(k => {
       const s = String(k ?? '').trim();
       if (s) set.add(s);
@@ -2960,12 +3109,7 @@ function toggleSkill(skill, btnEl) {
 
 // Récupère les keywords d’un projet (utile ailleurs)
 function getKeywords(proj){
-  return (proj && (
-    proj.keywords ||
-    proj['key-words'] ||
-    proj.tags ||
-    []
-  ))?.map(String) ?? [];
+  return getProjectKeywordsLocalized(proj);
 }
 
 // Liste des projets visibles selon les filtres actifs
@@ -3242,16 +3386,19 @@ function refreshProjectDrawer(){
     const body = document.createElement('div');
     body.style.cssText = 'flex:1;min-width:0;display:flex;flex-direction:column;gap:6px';
     const title = document.createElement('div');
-    title.innerHTML = `<strong style="font:600 14px system-ui">${p.title}</strong>
-                       <span style="opacity:.7;margin-left:6px;font:12px system-ui">${p.subtitle||''}</span>`;
+    const pTitle = getProjectField(p, 'title', 'Sans titre');
+    const pSubtitle = getProjectField(p, 'subtitle', '');
+    const pDescription = getProjectField(p, 'description', '');
+    title.innerHTML = `<strong style="font:600 14px system-ui">${pTitle}</strong>
+                       <span style="opacity:.7;margin-left:6px;font:12px system-ui">${pSubtitle||''}</span>`;
     const desc = document.createElement('div');
     desc.style.cssText = 'font:12px/1.35 system-ui;opacity:.85';
-    desc.textContent = snippet(p.description, 140);
+    desc.textContent = snippet(pDescription, 140);
 
     // mots-clés
     const kw = document.createElement('div');
     kw.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px';
-    (p.keywords || p['key-words'] || []).forEach(k => {
+    getProjectKeywordsLocalized(p).forEach(k => {
       const b = document.createElement('span');
       b.textContent = k;
       b.style.cssText =
@@ -4158,3 +4305,1086 @@ setTimeout(() => {
   }
 }, 1500); */
 
+
+
+/* ===== SPRINT 2 — i18n deep texts (script.js) ===== */
+(function setupSprint2ScriptI18n() {
+  const PF_S2 = {
+    getLang() {
+      try {
+        if (window.portfolioI18n && typeof window.portfolioI18n.getLang === 'function') {
+          return window.portfolioI18n.getLang() || 'fr';
+        }
+      } catch (_) {}
+      const htmlLang = document.documentElement?.dataset?.lang || document.documentElement?.lang || '';
+      return (String(htmlLang).toLowerCase().startsWith('en')) ? 'en' : 'fr';
+    },
+    txt() {
+      const lang = this.getLang();
+      return this.copy[lang] || this.copy.fr;
+    },
+    copy: {
+      fr: {
+        funFacts: [
+          { emoji: '💻', text: 'Intègre des capteurs Arduino dans Unity pour des projets IoT gaming' },
+          { emoji: '🎲', text: 'Amateur de campagnes JDR — le game design narratif inspire mes interfaces' },
+          { emoji: '🔬', text: 'Chercheur à l’IFT De Vinci Lab en bio-optique et systèmes embarqués' },
+          { emoji: '🎮', text: 'Débugge en speedrunning des jeux — l’optimisation est partout' },
+          { emoji: '🎵', text: 'Choriste — la coordination d’équipe s’apprend aussi en musique' },
+          { emoji: '🪗', text: 'A décroché un CEM d’accordéon et adore mixer code et musique' },
+          { emoji: '🤖', text: 'Prototype une IA qui lit la posture et le mouvement en temps réel' },
+          { emoji: '🐝', text: 'Imagine des systèmes IA pour les ruches autant que pour les labos' }
+        ],
+        loading: [
+          'Chargement de la scène – réveil des circuits…',
+          'Chargement de la scène – accordage des instruments virtuels…',
+          'Chargement de la scène – calibration des micros et capteurs…',
+          'Chargement de la scène – routage audio et bus d’effets…',
+          'Chargement de la scène – synchronisation moteur 3D et tempo…',
+          'Chargement de la scène – derniers tests de sécurité…',
+          'Scène prête – ouverture du rideau !'
+        ],
+        tour: {
+          stepLabel: 'Étape',
+          prev: '← Précédent',
+          next: 'Suivant →',
+          finish: 'Terminer',
+          skip: '✕ Ignorer',
+          steps: {
+            welcomeTitle: 'Bienvenue 👋',
+            welcomeDesc: 'Petit tour des commandes : caméra, vues, projets, filtres (et sons), puis backstage.\nTu peux à tout moment quitter avec “Ignorer”.',
+            dragTitle: 'Drag & See 🖱️',
+            dragDesc: 'Clic-gauche + drag : tourne autour de la scène.\nMolette : zoom.\n(OrbitControls)',
+            changeViewTitle: 'Changer de vue 🎬',
+            changeViewDesc: 'Bouton en haut à droite (ou touche V) : Entrée → Accordéon → Pupitre → Backstage.',
+            accTitle: 'Accordéon = musique 🪗',
+            accDesc: 'Clique l’accordéon : il joue un accord.\nC’est un objet interactif (audio).',
+            deskTitle: 'Pupitre : projets 📚',
+            deskDesc: 'Les pages du pupitre affichent les projets.\nClique une page → fiche détail sur le côté.',
+            pagerTitle: 'Changer de projet ◀ ▶',
+            pagerDesc: 'Utilise les boutons Précédent/Suivant (ou flèches clavier) pour tourner les pages.',
+            filtersTitle: 'Filtres (et sons) 🎛️',
+            filtersDesc: 'Ouvre le drawer du bas “Filtres & Contrôles”, active un filtre :\nça filtre les projets ET ça active des sons (notes en orbite).',
+            audioTitle: 'Audio 🔊',
+            audioDesc: 'Bouton audio : coupe/remet le son quand tu veux.',
+            listTitle: 'Liste projets (drawer gauche) ≡',
+            listDesc: 'Le bouton ≡ à gauche ouvre la liste complète :\naccès rapide à un projet + ouverture de la fiche.',
+            backstageTitle: 'Backstage 🎭',
+            backstageDesc: 'Passe backstage : certains objets se survolent et se cliquent\npour obtenir plus d’infos (focus lumière / détails).',
+            cvTitle: 'CV / À propos 📄',
+            cvDesc: 'Optionnel : clique le livre “CV” au centre de la scène pour voir mon profil et mes infos.',
+            avatarTitle: 'Avatar backstage 😄',
+            avatarDesc: 'Survole l’avatar : fun fact.\nClique : changement de scène (et en backstage, clic → retour accordéon).',
+            endTitle: 'C’est à toi ! 🚀',
+            endDesc: 'Tu peux relancer ce tutoriel via le bouton “🎓 Tutoriel”.\nBon parcours !'
+          }
+        },
+        quickHelp: {
+          buttonTitle: 'Afficher le guide rapide',
+          buttonAria: 'Afficher le guide rapide',
+          panelTitle: '🎭 Guide express',
+          panelCloseAria: 'Fermer le guide',
+          intro: 'Quelques repères pour explorer la scène et les projets.',
+          items: [
+            '<strong>Caméra</strong> : clic gauche + souris pour tourner, molette pour zoomer.',
+            '<strong>Changer de vue</strong> : bouton en haut à droite ou touche <b>V</b>.',
+            '<strong>Avatar</strong> : survol = fun fact, clic = changer de vue.',
+            '<strong>Pupitre &amp; projets</strong> : clic sur une page =&gt; fiche détaillée.',
+            '<strong>Filtres compétences</strong> : boutons en bas filtrent les projets.',
+            '<strong>Liste complète</strong> : bouton <b>≡</b> à gauche ouvre la liste.'
+          ],
+          tip: 'Astuce : commence par Entrée → Pupitre → Backstage.'
+        },
+        viewNames: {
+          entrance: "🎬 Vue d'entrée",
+          accordion: '🪗 Accordéon',
+          desk: '📚 Pupitre',
+          backstage: '🎭 Backstage'
+        }
+      },
+      en: {
+        funFacts: [
+          { emoji: '💻', text: 'Builds Arduino sensor integrations in Unity for IoT/game prototypes' },
+          { emoji: '🎲', text: 'Tabletop RPG fan — narrative game design inspires my interfaces' },
+          { emoji: '🔬', text: 'Research at IFT De Vinci Lab (bio-optics & embedded systems)' },
+          { emoji: '🎮', text: 'Debugs like a speedrunner — optimization mindset everywhere' },
+          { emoji: '🎵', text: 'Choir singer — timing and teamwork trained through music' },
+          { emoji: '🪗', text: 'Earned an advanced accordion diploma and loves mixing code + music' },
+          { emoji: '🤖', text: 'Prototyping AI for real-time posture and movement analysis' },
+          { emoji: '🐝', text: 'Imagines AI systems for beehives as much as for labs' }
+        ],
+        loading: [
+          'Loading scene – waking up the circuits…',
+          'Loading scene – tuning virtual instruments…',
+          'Loading scene – calibrating microphones and sensors…',
+          'Loading scene – routing audio and effect buses…',
+          'Loading scene – syncing the 3D engine and tempo…',
+          'Loading scene – final safety checks…',
+          'Scene ready – curtain up!'
+        ],
+        tour: {
+          stepLabel: 'Step',
+          prev: '← Previous',
+          next: 'Next →',
+          finish: 'Finish',
+          skip: '✕ Skip',
+          steps: {
+            welcomeTitle: 'Welcome 👋',
+            welcomeDesc: 'Quick tour of the controls: camera, views, projects, filters (and sounds), then backstage.\nYou can leave anytime with “Skip”.',
+            dragTitle: 'Drag & See 🖱️',
+            dragDesc: 'Left-click + drag: orbit around the scene.\nMouse wheel: zoom.\n(OrbitControls)',
+            changeViewTitle: 'Change view 🎬',
+            changeViewDesc: 'Top-right button (or V key): Entrance → Accordion → Desk → Backstage.',
+            accTitle: 'Accordion = music 🪗',
+            accDesc: 'Click the accordion: it plays a chord.\nIt is an interactive audio object.',
+            deskTitle: 'Desk: projects 📚',
+            deskDesc: 'The desk pages display projects.\nClick a page → detailed panel opens on the side.',
+            pagerTitle: 'Change project ◀ ▶',
+            pagerDesc: 'Use the Previous/Next buttons (or keyboard arrows) to turn pages.',
+            filtersTitle: 'Filters (and sounds) 🎛️',
+            filtersDesc: 'Open the bottom “Filters & Controls” drawer and activate a filter:\nit filters projects AND triggers sounds (orbiting notes).',
+            audioTitle: 'Audio 🔊',
+            audioDesc: 'Audio button: mute/unmute whenever you want.',
+            listTitle: 'Project list (left drawer) ≡',
+            listDesc: 'The ≡ button on the left opens the full list:\nquick access to a project + detail panel.',
+            backstageTitle: 'Backstage 🎭',
+            backstageDesc: 'Go backstage: some objects can be hovered and clicked\nto reveal more info (light focus / details).',
+            cvTitle: 'CV / About 📄',
+            cvDesc: 'Optional: click the “CV” book in the center to see my profile and info.',
+            avatarTitle: 'Backstage avatar 😄',
+            avatarDesc: 'Hover the avatar: fun fact.\nClick: change scene (and in backstage, click → back to accordion).',
+            endTitle: 'Your turn! 🚀',
+            endDesc: 'You can restart this tutorial with the “🎓 Tutorial” button.\nEnjoy exploring!'
+          }
+        },
+        quickHelp: {
+          buttonTitle: 'Show quick guide',
+          buttonAria: 'Show quick guide',
+          panelTitle: '🎭 Quick guide',
+          panelCloseAria: 'Close guide',
+          intro: 'A few landmarks to explore the scene and projects.',
+          items: [
+            '<strong>Camera</strong>: left click + drag to orbit, mouse wheel to zoom.',
+            '<strong>Change view</strong>: top-right button or <b>V</b> key.',
+            '<strong>Avatar</strong>: hover = fun fact, click = switch view.',
+            '<strong>Desk &amp; projects</strong>: click a page =&gt; detailed panel.',
+            '<strong>Skill filters</strong>: bottom buttons filter projects.',
+            '<strong>Full list</strong>: left <b>≡</b> button opens the project list.'
+          ],
+          tip: 'Tip: start with Entrance → Desk → Backstage.'
+        },
+        viewNames: {
+          entrance: '🎬 Entrance View',
+          accordion: '🪗 Accordion',
+          desk: '📚 Desk',
+          backstage: '🎭 Backstage'
+        }
+      }
+    }
+  };
+
+  function pfS2Copy() { return PF_S2.txt(); }
+
+  // Override fun facts getter with current language
+  getRandomFunFact = function () {
+    const facts = pfS2Copy().funFacts || PF_S2.copy.fr.funFacts;
+    return facts[Math.floor(Math.random() * facts.length)];
+  };
+
+  // Override loading messages with current language
+  getLoadingMessage = function (progress) {
+    const msgs = pfS2Copy().loading || PF_S2.copy.fr.loading;
+    if (progress < 10) return msgs[0];
+    if (progress < 25) return msgs[1];
+    if (progress < 40) return msgs[2];
+    if (progress < 60) return msgs[3];
+    if (progress < 80) return msgs[4];
+    if (progress < 100) return msgs[5];
+    return msgs[6];
+  };
+
+  // Keep camera view labels synced with language (script.js source of truth)
+  function applyViewNamesFromLang() {
+    if (typeof CAMERA_VIEWS !== 'object') return;
+    const vn = pfS2Copy().viewNames || PF_S2.copy.fr.viewNames;
+    if (CAMERA_VIEWS.entrance) CAMERA_VIEWS.entrance.name = vn.entrance;
+    if (CAMERA_VIEWS.accordion) CAMERA_VIEWS.accordion.name = vn.accordion;
+    if (CAMERA_VIEWS.desk) CAMERA_VIEWS.desk.name = vn.desk;
+    if (CAMERA_VIEWS.backstage) CAMERA_VIEWS.backstage.name = vn.backstage;
+    try { if (typeof updateViewButtonText === 'function') updateViewButtonText(); } catch (_) {}
+  }
+
+  // Monkey-patch GuidedTour buttons + translated steps
+  if (typeof GuidedTour !== 'undefined') {
+    GuidedTour.prototype.updatePanel = function(step) {
+      const copy = pfS2Copy().tour || PF_S2.copy.fr.tour;
+      const stepNum = this.currentStep + 1;
+      const totalSteps = this.getTourSteps().length;
+      const isLast = this.currentStep === totalSteps - 1;
+
+      this.tourPanel.innerHTML = `
+        <div style="margin-bottom: 12px; font-size: 12px; color: #0ea5e9;">
+          ${copy.stepLabel} ${stepNum} / ${totalSteps}
+        </div>
+        <h3 style="margin: 0 0 12px 0; font-size: 18px; font-weight: 600;">
+          ${step.title}
+        </h3>
+        <p style="margin: 0 0 18px 0; font-size: 14px; line-height: 1.5; color: #ddd; white-space: pre-line;">
+          ${step.description}
+        </p>
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+          ${this.currentStep > 0 ? `
+            <button class="tour-btn-prev" style="
+              padding: 8px 16px;
+              background: rgba(102, 102, 102, 0.6);
+              color: white;
+              border: 1px solid rgba(255, 255, 255, 0.2);
+              border-radius: 6px;
+              cursor: pointer;
+              font-size: 13px;
+              transition: all 0.2s;
+            ">
+              ${copy.prev}
+            </button>
+          ` : ''}
+          <button class="tour-btn-next" style="
+            padding: 8px 16px;
+            background: #0ea5e9;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+          ">
+           ${isLast ? copy.finish : copy.next}
+          </button>
+          <button class="tour-btn-close" style="
+            padding: 8px 16px;
+            background: rgba(102, 102, 102, 0.6);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+          ">
+            ${copy.skip}
+          </button>
+        </div>
+      `;
+
+      const btnNext = this.tourPanel.querySelector('.tour-btn-next');
+      const btnPrev = this.tourPanel.querySelector('.tour-btn-prev');
+      const btnClose = this.tourPanel.querySelector('.tour-btn-close');
+
+      btnNext.onclick = () => (isLast ? this.finish() : this.next());
+      if (btnPrev) btnPrev.onclick = () => this.prev();
+      btnClose.onclick = () => this.stop();
+
+      this.tourPanel.style.display = 'block';
+    };
+
+    GuidedTour.prototype.getTourSteps = function() {
+      const V = CAMERA_VIEWS;
+      const T = (pfS2Copy().tour || PF_S2.copy.fr.tour).steps;
+
+      return [
+        {
+          title: T.welcomeTitle,
+          description: T.welcomeDesc,
+          placement: 'center',
+          onEnter: () => {
+            window.setBottomMenuOpen?.(false);
+            window.__closeProjectDrawer?.();
+            if (typeof closeProjectDetail === 'function') closeProjectDetail(false);
+            if (typeof switchToView === 'function') switchToView('entrance');
+          },
+          cameraPosition: V.entrance.position,
+          cameraTarget: V.entrance.target
+        },
+        {
+          title: T.dragTitle,
+          description: T.dragDesc,
+          cameraPosition: null,
+          cameraTarget: null
+        },
+        {
+          title: T.changeViewTitle,
+          description: T.changeViewDesc,
+          ui: '#view-cycle-btn',
+          anchor: '#view-cycle-btn',
+          placement: 'center',
+          cameraPosition: null,
+          cameraTarget: null
+        },
+        {
+          title: T.accTitle,
+          description: T.accDesc,
+          objectName: "accordionModel",
+          onEnter: () => switchToView('accordion'),
+          cameraPosition: V.accordion.position,
+          cameraTarget: V.accordion.target
+        },
+        {
+          title: T.deskTitle,
+          description: T.deskDesc,
+          objectName: "leftPage",
+          onEnter: () => {
+            switchToView('desk');
+            window.__closeProjectDrawer?.();
+          },
+          cameraPosition: V.desk.position,
+          cameraTarget: V.desk.target
+        },
+        {
+          title: T.pagerTitle,
+          description: T.pagerDesc,
+          ui: ['#pager', '#prevPage', '#nextPage'],
+          anchor: '#pager',
+          placement: 'center',
+          cameraPosition: V.desk.position,
+          cameraTarget: V.desk.target
+        },
+        {
+          title: T.filtersTitle,
+          description: T.filtersDesc,
+          ui: ['#menu-toggle-btn', '#bottom-menu', '#filters-container'],
+          anchor: '#filters-container',
+          placement: 'top',
+          onEnter: () => window.setBottomMenuOpen?.(true),
+          cameraPosition: V.desk.position,
+          cameraTarget: V.desk.target
+        },
+        {
+          title: T.audioTitle,
+          description: T.audioDesc,
+          ui: '#audio-mute-btn',
+          anchor: '#audio-mute-btn',
+          placement: 'left',
+          cameraPosition: null,
+          cameraTarget: null
+        },
+        {
+          title: T.listTitle,
+          description: T.listDesc,
+          ui: ['#toggleListBtn', '#projDrawer'],
+          anchor: '#toggleListBtn',
+          placement: 'right',
+          onEnter: () => window.__openProjectDrawer?.(),
+          cameraPosition: V.desk.position,
+          cameraTarget: V.desk.target
+        },
+        {
+          title: T.backstageTitle,
+          description: T.backstageDesc,
+          onEnter: () => {
+            window.setBottomMenuOpen?.(false);
+            switchToView('backstage');
+          },
+          cameraPosition: V.backstage.position,
+          cameraTarget: V.backstage.target
+        },
+        {
+          title: T.cvTitle,
+          description: T.cvDesc,
+          objectName: "aboutMePanel",
+          cameraPosition: V.backstage.position,
+          cameraTarget: V.backstage.target
+        },
+        {
+          title: T.avatarTitle,
+          description: T.avatarDesc,
+          objectName: "avatarBackstage",
+          cameraPosition: V.backstage.position,
+          cameraTarget: V.backstage.target
+        },
+        {
+          title: T.endTitle,
+          description: T.endDesc,
+          ui: '#restart-tour-btn',
+          anchor: '#restart-tour-btn',
+          placement: 'left',
+          onEnter: () => {
+            window.setBottomMenuOpen?.(false);
+            window.__closeProjectDrawer?.();
+          },
+          cameraPosition: null,
+          cameraTarget: null
+        }
+      ];
+    };
+  }
+
+  function localizeQuickHelpPanel() {
+    const copy = pfS2Copy().quickHelp || PF_S2.copy.fr.quickHelp;
+    const helpBtn = document.getElementById('quickHelpBtn');
+    if (helpBtn) {
+      helpBtn.title = copy.buttonTitle;
+      helpBtn.setAttribute('aria-label', copy.buttonAria);
+    }
+
+    const panel = document.getElementById('quickHelpPanel');
+    if (!panel) return;
+
+    const titleEl = panel.querySelector('header div');
+    if (titleEl) titleEl.textContent = copy.panelTitle;
+
+    const closeBtn = panel.querySelector('#quickHelpClose');
+    if (closeBtn) closeBtn.setAttribute('aria-label', copy.panelCloseAria);
+
+    const topDivs = panel.querySelectorAll(':scope > div');
+    if (topDivs[0]) topDivs[0].textContent = copy.intro;
+    if (topDivs[topDivs.length - 1]) topDivs[topDivs.length - 1].textContent = copy.tip;
+
+    const items = panel.querySelectorAll('ol li');
+    copy.items.forEach((html, i) => {
+      if (items[i]) items[i].innerHTML = html;
+    });
+  }
+
+  function refreshGuidedTourIfVisible() {
+    try {
+      if (window.guidedTour?.isActive) {
+        window.guidedTour.showStep();
+      }
+    } catch (e) {
+      console.warn('guidedTour language refresh error', e);
+    }
+  }
+
+  applyViewNamesFromLang();
+  localizeQuickHelpPanel();
+
+  function refreshProjectsLanguageUI() {
+    try {
+      if (typeof activeFilters !== 'undefined' && activeFilters?.clear) {
+        activeFilters.clear();
+      }
+    } catch (_) {}
+
+    try { rebuildSkillsFromProjects?.(); } catch (e) { console.warn('rebuildSkillsFromProjects lang refresh error', e); }
+    try { updateFilteredView?.(); } catch (e) { console.warn('updateFilteredView lang refresh error', e); }
+    try { updatePagerState?.(); } catch (e) { console.warn('updatePagerState lang refresh error', e); }
+    try { window.__refreshProjectDrawer?.(); } catch (e) { console.warn('drawer lang refresh error', e); }
+    try { refreshProjectDetailLanguage?.(); } catch (e) { console.warn('project detail lang refresh error', e); }
+  }
+
+  window.addEventListener('portfolio-language-changed', () => {
+    applyViewNamesFromLang();
+    localizeQuickHelpPanel();
+    refreshGuidedTourIfVisible();
+    refreshProjectsLanguageUI();
+  });
+})();
+/* ===== END SPRINT 2 — i18n deep texts (script.js) ===== */
+
+
+/* ===== MINI SPRINT 2.2 — remaining UI labels (project panel + drawer) ===== */
+(function () {
+  const PF_22_UI = {
+    getLang() {
+      try {
+        if (window.portfolioI18n && typeof window.portfolioI18n.getLang === 'function') {
+          return window.portfolioI18n.getLang() === 'en' ? 'en' : 'fr';
+        }
+      } catch (_) {}
+      const htmlLang = document.documentElement?.dataset?.lang || document.documentElement?.lang || 'fr';
+      return String(htmlLang).toLowerCase().startsWith('en') ? 'en' : 'fr';
+    },
+    copy: {
+      fr: {
+        projectsTitle: '📚 Projets',
+        drawerCloseTitle: 'Fermer (L)',
+        drawerToggleTitle: 'Liste des projets (L)',
+        drawerFilteredOnly: 'Afficher uniquement la sélection filtrée',
+        noKeywordsDetected: 'Aucun mot-clé détecté dans projects.json',
+        projectPanelCloseAria: 'Fermer la fiche projet'
+      },
+      en: {
+        projectsTitle: '📚 Projects',
+        drawerCloseTitle: 'Close (L)',
+        drawerToggleTitle: 'Project list (L)',
+        drawerFilteredOnly: 'Show filtered selection only',
+        noKeywordsDetected: 'No keywords detected in projects.json',
+        projectPanelCloseAria: 'Close project panel'
+      }
+    },
+    txt() {
+      const lang = this.getLang();
+      return this.copy[lang] || this.copy.fr;
+    }
+  };
+
+  function pf22() { return PF_22_UI.txt(); }
+
+  function localizeProjectDrawerChrome() {
+    const t = pf22();
+
+    const drawer = document.getElementById('projDrawer');
+    if (drawer) {
+      const titleStrong = drawer.querySelector('strong');
+      if (titleStrong) titleStrong.textContent = t.projectsTitle;
+
+      const closeBtn = drawer.querySelector('#pdClose');
+      if (closeBtn) closeBtn.title = t.drawerCloseTitle;
+
+      const filteredSpan = drawer.querySelector('#pdOnlyFiltered')?.closest('label')?.querySelector('span');
+      if (filteredSpan) filteredSpan.textContent = t.drawerFilteredOnly;
+    }
+
+    const toggle = document.getElementById('toggleListBtn');
+    if (toggle) toggle.title = t.drawerToggleTitle;
+  }
+
+  function localizeProjectPanelChrome() {
+    const t = pf22();
+    const closeBtn = document.querySelector('#projDetailPanel [data-role="close"]');
+    if (closeBtn) closeBtn.setAttribute('aria-label', t.projectPanelCloseAria);
+  }
+
+  function localizeNoKeywordsInfo() {
+    const t = pf22();
+    const container = document.getElementById('filters-container');
+    if (!container) return;
+
+    const candidates = [...container.children].filter(el => el.tagName === 'DIV' && !el.classList.contains('filter-btn'));
+    for (const el of candidates) {
+      const txt = (el.textContent || '').trim();
+      if (
+        txt === 'Aucun mot-clé détecté dans projects.json' ||
+        txt === 'No keywords detected in projects.json'
+      ) {
+        el.textContent = t.noKeywordsDetected;
+      }
+    }
+  }
+
+  function localizeProjectUiLabels() {
+    localizeProjectDrawerChrome();
+    localizeProjectPanelChrome();
+    localizeNoKeywordsInfo();
+  }
+
+  // Patch lazy-created project detail panel so aria labels follow current language immediately.
+  if (typeof openProjectDetail === 'function') {
+    const _openProjectDetail = openProjectDetail;
+    openProjectDetail = function (...args) {
+      const out = _openProjectDetail.apply(this, args);
+      try { localizeProjectPanelChrome(); } catch (_) {}
+      return out;
+    };
+  }
+
+  // Localize now + whenever language changes.
+  localizeProjectUiLabels();
+  window.addEventListener('portfolio-language-changed', localizeProjectUiLabels);
+
+  // Also expose for manual debugging if needed.
+  window.__localizeProjectUiLabels = localizeProjectUiLabels;
+})();
+/* ===== END MINI SPRINT 2.2 ===== */
+
+
+/* ===== SPRINT 3 — Recruiter Quick Access Mode ===== */
+(function () {
+  const RECR = {
+    getLang() {
+      try {
+        if (window.portfolioI18n && typeof window.portfolioI18n.getLang === 'function') {
+          return window.portfolioI18n.getLang() === 'en' ? 'en' : 'fr';
+        }
+      } catch (_) {}
+      const htmlLang = document.documentElement?.dataset?.lang || document.documentElement?.lang || 'fr';
+      return String(htmlLang).toLowerCase().startsWith('en') ? 'en' : 'fr';
+    },
+    copy: {
+      fr: {
+        toggleTitle: 'Mode recruteur / accès rapide',
+        toggleLabel: '⚡ Accès rapide',
+        panelTitle: 'Mode recruteur',
+        panelSubtitle: 'Accès direct à l’essentiel (CV + projets) en quelques secondes.',
+        openCvPdf: '📄 Ouvrir le CV (PDF)',
+        openCvBackstage: '🎭 Voir le CV dans la scène',
+        openProjects: '📚 Ouvrir la liste des projets',
+        openFirstProject: '⭐ Ouvrir le 1er projet',
+        goDesk: '🪑 Aller au pupitre',
+        goAccordion: '🪗 Voir la démo accordéon',
+        goBackstage: '🎭 Aller au backstage',
+        closePanel: 'Fermer',
+        badge: 'Recruteur',
+        hintTitle: '⚡ Accès rapide recruteur',
+        hintText: 'Tu peux ouvrir directement le CV ou la liste des projets sans explorer toute la scène.',
+        hintDismiss: 'Compris',
+        hintHideForever: 'Ne plus afficher',
+        statusLoadingBackstage: 'Chargement du backstage… ouverture du CV ensuite.',
+        statusNoProjects: 'Aucun projet visible pour le moment (ouvre la liste).'
+      },
+      en: {
+        toggleTitle: 'Recruiter mode / quick access',
+        toggleLabel: '⚡ Quick access',
+        panelTitle: 'Recruiter mode',
+        panelSubtitle: 'Direct access to the essentials (resume + projects) in seconds.',
+        openCvPdf: '📄 Open resume (PDF)',
+        openCvBackstage: '🎭 View resume in scene',
+        openProjects: '📚 Open project list',
+        openFirstProject: '⭐ Open first project',
+        goDesk: '🪑 Go to desk',
+        goAccordion: '🪗 Accordion demo',
+        goBackstage: '🎭 Go backstage',
+        closePanel: 'Close',
+        badge: 'Recruiter',
+        hintTitle: '⚡ Recruiter quick access',
+        hintText: 'You can open the resume or project list directly without exploring the whole scene first.',
+        hintDismiss: 'Got it',
+        hintHideForever: 'Do not show again',
+        statusLoadingBackstage: 'Loading backstage… resume will open next.',
+        statusNoProjects: 'No visible project right now (open the list).'
+      }
+    },
+    txt() {
+      return this.copy[this.getLang()] || this.copy.fr;
+    },
+    cvUrl() {
+      return this.getLang() === 'en' ? './images/CV_EN.pdf' : './images/CV_FR.pdf';
+    }
+  };
+
+  const ROOT_ID = 'recruiter-quick-access';
+  let ui = null;
+  let open = false;
+  let hintShownThisLoad = false;
+  let autoHintTimer = null;
+
+  function q(selector, root = document) {
+    return root.querySelector(selector);
+  }
+
+  function safeCall(fn, ...args) {
+    try { return typeof fn === 'function' ? fn(...args) : undefined; }
+    catch (e) { console.warn('recruiter quick access error', e); }
+  }
+
+  function createUI() {
+    if (document.getElementById(ROOT_ID)) {
+      ui = document.getElementById(ROOT_ID);
+      return ui;
+    }
+
+    const root = document.createElement('div');
+    root.id = ROOT_ID;
+    root.style.cssText = `
+      position: fixed;
+      left: 14px;
+      top: 14px;
+      z-index: 10030;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+      pointer-events: none;
+      max-width: min(92vw, 420px);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    `;
+
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.id = 'recruiter-qa-toggle';
+    toggle.style.cssText = `
+      pointer-events: auto;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(2,6,23,.88);
+      color: #f8fafc;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-size: clamp(13px, 0.6vw + 11px, 16px);
+      line-height: 1;
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(0,0,0,.35);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    `;
+    toggle.innerHTML = `<span id="recruiter-qa-badge" style="font-size:11px;padding:4px 7px;border-radius:999px;background:#0ea5e9;color:#fff;line-height:1;">Recruteur</span><span id="recruiter-qa-toggle-label">⚡ Accès rapide</span>`;
+
+    const panel = document.createElement('section');
+    panel.id = 'recruiter-qa-panel';
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-modal', 'false');
+    panel.setAttribute('aria-label', 'Recruiter quick access');
+    panel.style.cssText = `
+      pointer-events: auto;
+      width: min(92vw, 390px);
+      background: rgba(2, 6, 23, 0.95);
+      color: #e2e8f0;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: 0 20px 40px rgba(0,0,0,.45);
+      display: none;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    `;
+
+    panel.innerHTML = `
+      <div style="display:flex;align-items:flex-start;gap:10px;">
+        <div style="flex:1;min-width:0;">
+          <div id="recruiter-qa-title" style="font-size:16px;font-weight:700;line-height:1.2;">Mode recruteur</div>
+          <div id="recruiter-qa-subtitle" style="font-size:12px;opacity:.85;line-height:1.35;margin-top:4px;">Accès direct à l’essentiel (CV + projets) en quelques secondes.</div>
+        </div>
+        <button type="button" id="recruiter-qa-close" style="border:0;background:#111827;color:#e5e7eb;width:28px;height:28px;border-radius:999px;cursor:pointer;font-size:14px;">✕</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px;">
+        <button type="button" data-action="cv-pdf" class="rqa-btn"></button>
+        <button type="button" data-action="cv-backstage" class="rqa-btn"></button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
+        <button type="button" data-action="projects-list" class="rqa-btn rqa-btn-secondary"></button>
+        <button type="button" data-action="project-first" class="rqa-btn rqa-btn-secondary"></button>
+        <button type="button" data-action="go-desk" class="rqa-btn rqa-btn-ghost"></button>
+        <button type="button" data-action="go-accordion" class="rqa-btn rqa-btn-ghost"></button>
+        <button type="button" data-action="go-backstage" class="rqa-btn rqa-btn-ghost" style="grid-column:1/-1;"></button>
+      </div>
+
+      <div id="recruiter-qa-status" style="margin-top:10px;min-height:18px;font-size:11px;opacity:.85;"></div>
+    `;
+
+    const hint = document.createElement('div');
+    hint.id = 'recruiter-qa-hint';
+    hint.style.cssText = `
+      pointer-events: auto;
+      display: none;
+      width: min(92vw, 390px);
+      background: rgba(15, 23, 42, 0.96);
+      color: #e2e8f0;
+      border: 1px solid rgba(14,165,233,.35);
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: 0 18px 38px rgba(0,0,0,.35);
+    `;
+    hint.innerHTML = `
+      <div id="recruiter-qa-hint-title" style="font-weight:700;font-size:14px;line-height:1.2;"></div>
+      <div id="recruiter-qa-hint-text" style="margin-top:6px;font-size:12px;line-height:1.4;opacity:.92;"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap;">
+        <button type="button" id="recruiter-qa-hint-open" class="rqa-btn rqa-btn-secondary" style="font-size:12px;padding:8px 10px;"></button>
+        <button type="button" id="recruiter-qa-hint-dismiss" class="rqa-btn rqa-btn-ghost" style="font-size:12px;padding:8px 10px;"></button>
+        <button type="button" id="recruiter-qa-hint-hide" class="rqa-btn rqa-btn-ghost" style="font-size:12px;padding:8px 10px;"></button>
+      </div>
+    `;
+
+    const style = document.createElement('style');
+    style.textContent = `
+      #${ROOT_ID} .rqa-btn {
+        border: 1px solid rgba(255,255,255,.12);
+        background: #0ea5e9;
+        color: #fff;
+        border-radius: 10px;
+        padding: 10px 12px;
+        cursor: pointer;
+        text-align: left;
+        font-size: 13px;
+        line-height: 1.25;
+      }
+      #${ROOT_ID} .rqa-btn:hover { filter: brightness(1.06); }
+      #${ROOT_ID} .rqa-btn-secondary { background: rgba(30,41,59,.95); }
+      #${ROOT_ID} .rqa-btn-ghost { background: rgba(15,23,42,.65); }
+      #${ROOT_ID} .rqa-btn:focus-visible,
+      #${ROOT_ID} #recruiter-qa-toggle:focus-visible,
+      #${ROOT_ID} #recruiter-qa-close:focus-visible {
+        outline: 2px solid rgba(14,165,233,.9);
+        outline-offset: 2px;
+      }
+      @media (max-width: 768px) {
+        #${ROOT_ID} { left: 10px; top: 10px; }
+        #${ROOT_ID} #recruiter-qa-panel,
+        #${ROOT_ID} #recruiter-qa-hint { width: min(95vw, 360px); }
+      }
+    `;
+    root.appendChild(style);
+    root.appendChild(toggle);
+    root.appendChild(panel);
+    root.appendChild(hint);
+    document.body.appendChild(root);
+
+    // Events
+    toggle.addEventListener('click', () => setOpen(!open));
+    q('#recruiter-qa-close', root)?.addEventListener('click', () => setOpen(false));
+
+    root.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      const action = btn.getAttribute('data-action');
+      runAction(action);
+    });
+
+    q('#recruiter-qa-hint-open', root)?.addEventListener('click', () => {
+      hideHint();
+      setOpen(true);
+    });
+    q('#recruiter-qa-hint-dismiss', root)?.addEventListener('click', hideHint);
+    q('#recruiter-qa-hint-hide', root)?.addEventListener('click', () => {
+      localStorage.setItem('recruiterQuickAccessHintHidden', '1');
+      hideHint();
+    });
+
+    ui = root;
+    localize();
+    return root;
+  }
+
+  function localize() {
+    if (!ui) return;
+    const t = RECR.txt();
+    const setText = (sel, val) => { const el = q(sel, ui); if (el) el.textContent = val; };
+
+    const toggle = q('#recruiter-qa-toggle', ui);
+    if (toggle) toggle.title = t.toggleTitle;
+
+    setText('#recruiter-qa-badge', t.badge);
+    setText('#recruiter-qa-toggle-label', t.toggleLabel);
+    setText('#recruiter-qa-title', t.panelTitle);
+    setText('#recruiter-qa-subtitle', t.panelSubtitle);
+
+    const labels = {
+      'cv-pdf': t.openCvPdf,
+      'cv-backstage': t.openCvBackstage,
+      'projects-list': t.openProjects,
+      'project-first': t.openFirstProject,
+      'go-desk': t.goDesk,
+      'go-accordion': t.goAccordion,
+      'go-backstage': t.goBackstage
+    };
+    ui.querySelectorAll('[data-action]').forEach((el) => {
+      const key = el.getAttribute('data-action');
+      if (key && labels[key]) el.textContent = labels[key];
+    });
+
+    const closeBtn = q('#recruiter-qa-close', ui);
+    if (closeBtn) closeBtn.setAttribute('aria-label', t.closePanel);
+
+    setText('#recruiter-qa-hint-title', t.hintTitle);
+    setText('#recruiter-qa-hint-text', t.hintText);
+    setText('#recruiter-qa-hint-open', t.toggleLabel);
+    setText('#recruiter-qa-hint-dismiss', t.hintDismiss);
+    setText('#recruiter-qa-hint-hide', t.hintHideForever);
+  }
+
+  function setOpen(next) {
+    open = !!next;
+    if (!ui) return;
+    const panel = q('#recruiter-qa-panel', ui);
+    if (!panel) return;
+    panel.style.display = open ? 'block' : 'none';
+    q('#recruiter-qa-toggle', ui)?.setAttribute('aria-expanded', String(open));
+    if (open) hideHint();
+  }
+
+  function setStatus(msg) {
+    const status = ui ? q('#recruiter-qa-status', ui) : null;
+    if (!status) return;
+    status.textContent = msg || '';
+    if (!msg) return;
+    window.clearTimeout(setStatus._t);
+    setStatus._t = window.setTimeout(() => {
+      if (status.textContent === msg) status.textContent = '';
+    }, 2600);
+  }
+
+  function goToView(name) {
+    try {
+      if (typeof switchToView === 'function') {
+        switchToView(name);
+      } else if (typeof window.switchToView === 'function') {
+        window.switchToView(name);
+      }
+    } catch (e) {
+      console.warn('switchToView failed', e);
+    }
+  }
+
+  function openCvPdf() {
+    const url = RECR.cvUrl();
+    window.open(url, '_blank', 'noopener');
+  }
+
+  function openCvInScene() {
+    goToView('backstage');
+
+    // If backstage system is already ready, open immediately after camera move.
+    const attempt = () => {
+      try {
+        if (backstageSystem && typeof backstageSystem.showCVModal === 'function') {
+          backstageSystem.showCVModal();
+          return true;
+        }
+      } catch (_) {}
+      return false;
+    };
+
+    if (attempt()) return;
+
+    setStatus(RECR.txt().statusLoadingBackstage);
+    let tries = 0;
+    const timer = setInterval(() => {
+      tries++;
+      if (attempt() || tries > 16) {
+        clearInterval(timer);
+        if (tries > 16) openCvPdf();
+      }
+    }, 250);
+  }
+
+  function openProjectsList() {
+    safeCall(window.setBottomMenuOpen, false);
+    goToView('desk');
+    setTimeout(() => safeCall(window.__openProjectDrawer), 350);
+  }
+
+  function openFirstProject() {
+    safeCall(window.setBottomMenuOpen, false);
+    goToView('desk');
+
+    let visible = [];
+    try {
+      visible = (typeof getVisibleProjects === 'function' ? getVisibleProjects() : (Array.isArray(projects) ? projects : [])) || [];
+    } catch (_) {
+      visible = Array.isArray(projects) ? projects : [];
+    }
+
+    if (!visible.length) {
+      setStatus(RECR.txt().statusNoProjects);
+      setTimeout(() => safeCall(window.__openProjectDrawer), 250);
+      return;
+    }
+
+    const p = visible[0];
+    try {
+      const all = Array.isArray(projects) ? projects : visible;
+      const idx = all.indexOf(p);
+      if (typeof idx === 'number' && idx >= 0 && typeof indexLeft !== 'undefined') {
+        indexLeft = idx;
+      }
+      if (typeof rebuildPages === 'function') rebuildPages();
+    } catch (e) {
+      console.warn('recruiter first-project sync error', e);
+    }
+
+    setTimeout(() => {
+      try {
+        if (typeof closeProjectDetail === 'function') closeProjectDetail(false);
+      } catch (_) {}
+      try {
+        if (typeof openProjectDetail === 'function') openProjectDetail(p, null);
+      } catch (e) {
+        console.warn('openProjectDetail failed', e);
+      }
+    }, 450);
+  }
+
+  function runAction(action) {
+    switch (action) {
+      case 'cv-pdf':
+        openCvPdf();
+        break;
+      case 'cv-backstage':
+        openCvInScene();
+        break;
+      case 'projects-list':
+        openProjectsList();
+        break;
+      case 'project-first':
+        openFirstProject();
+        break;
+      case 'go-desk':
+        safeCall(window.setBottomMenuOpen, false);
+        goToView('desk');
+        break;
+      case 'go-accordion':
+        safeCall(window.setBottomMenuOpen, false);
+        goToView('accordion');
+        break;
+      case 'go-backstage':
+        safeCall(window.setBottomMenuOpen, false);
+        goToView('backstage');
+        break;
+      default:
+        break;
+    }
+  }
+
+  function isLoadingScreenHidden() {
+    const loadingScreen = document.getElementById('loading-screen');
+    if (!loadingScreen) return true;
+    const cs = window.getComputedStyle(loadingScreen);
+    return cs.display === 'none' || loadingScreen.hidden === true || parseFloat(cs.opacity || '1') === 0;
+  }
+
+  function showHint() {
+    if (!ui) return;
+    if (localStorage.getItem('recruiterQuickAccessHintHidden') === '1') return;
+    const hint = q('#recruiter-qa-hint', ui);
+    if (!hint) return;
+    hint.style.display = 'block';
+  }
+
+  function hideHint() {
+    if (!ui) return;
+    q('#recruiter-qa-hint', ui)?.style && (q('#recruiter-qa-hint', ui).style.display = 'none');
+  }
+
+  function maybeShowHintAfterLoading() {
+    if (hintShownThisLoad) return;
+    hintShownThisLoad = true;
+
+    const tick = () => {
+      if (isLoadingScreenHidden()) {
+        autoHintTimer = window.setTimeout(showHint, 900);
+      } else {
+        requestAnimationFrame(tick);
+      }
+    };
+    tick();
+  }
+
+  function init() {
+    createUI();
+    setOpen(false);
+    maybeShowHintAfterLoading();
+
+    window.addEventListener('portfolio-language-changed', () => {
+      localize();
+      // refresh status text if visible and one of the known messages is present
+      // (kept simple on purpose)
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key.toLowerCase() === 'r' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const tag = document.activeElement?.tagName?.toLowerCase();
+        const isTyping = tag === 'input' || tag === 'textarea' || document.activeElement?.isContentEditable;
+        if (!isTyping) setOpen(!open);
+      }
+    });
+
+    window.recruiterQuickAccess = {
+      open: () => setOpen(true),
+      close: () => setOpen(false),
+      toggle: () => setOpen(!open),
+      openCvPdf,
+      openCvInScene,
+      openProjectsList,
+      openFirstProject
+    };
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init, { once: true });
+  } else {
+    init();
+  }
+})();
+/* ===== END SPRINT 3 — Recruiter Quick Access Mode ===== */
